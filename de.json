@@ -1,0 +1,81 @@
+{
+    "cambio": 0,
+    "numero": 100468,
+    "establecimiento": 1,
+    "punto": "001",
+    "condicion": {
+        "tipo": 1,
+        "entregas": [
+            {
+                "cambio": 0,
+                "tipo": 1,
+                "monto": "8900.0",
+                "moneda": "PYG"
+            }
+        ]
+    },
+    "tipoImpuesto": 1,
+    "tipoDocumento": 1,
+    "fecha": "2023-09-13T13:34:34",
+    "cliente": {
+        "nombreFantasia": "NICOLAS                                                                                              AGUILERA                                                                                            ",
+        "distrito": 0,
+        "contribuyente": false,
+        "codigo": "000",
+        "tipoOperacion": 2,
+        "documentoNumero": "4303489",
+        "tipoContribuyente": 1,
+        "pais": "PRY",
+        "razonSocial": "NICOLAS                                                                                              AGUILERA                                                                                            ",
+        "ciudad": 0,
+        "departamento": 0,
+        "celular": "",
+        "documentoTipo": 1,
+        "telefono": "",
+        "email": ""
+    },
+    "factura": {
+        "presencia": 1
+    },
+    "moneda": "PYG",
+    "tipoTransaccion": 1,
+    "tipoEmision": 1,
+    "items": [
+        {
+            "descripcion": "ARCOIRIS MALVA 15G",
+            "cambio": 0,
+            "ivaTipo": 1,
+            "codigo": "7840595001661",
+            "precioUnitario": 2500,
+            "unidadMedida": 77,
+            "ivaBase": 100,
+            "iva": 5,
+            "descuento": 0,
+            "cantidad": 1
+        },
+        {
+            "descripcion": "ARCOR TURRON DE MANI 25G",
+            "cambio": 0,
+            "ivaTipo": 1,
+            "codigo": "77940131",
+            "precioUnitario": 1500,
+            "unidadMedida": 77,
+            "ivaBase": 100,
+            "iva": 10,
+            "descuento": 0,
+            "cantidad": 1
+        },
+        {
+            "descripcion": "ARCOR MANA RELLENAS SABOR FRUTILLA 152GR",
+            "cambio": 0,
+            "ivaTipo": 1,
+            "codigo": "7790040133266",
+            "precioUnitario": 4900,
+            "unidadMedida": 77,
+            "ivaBase": 100,
+            "iva": 10,
+            "descuento": 0,
+            "cantidad": 1
+        }
+    ]
+}
