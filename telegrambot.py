@@ -1,4 +1,3 @@
-import datetime
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler
 import requests
@@ -6,6 +5,7 @@ import json
 import sqlite3
 import datetime
 import os
+from datetime import datetime, timedelta
 
 db_filename = 'resultados.db'
 db_exists = os.path.exists(db_filename)
@@ -25,14 +25,14 @@ if not db_exists:
 
 
 def registrar_resultado(resultado):
-    fecha_actual = datetime.datetime.now()
+    fecha_actual = datetime.now()
     cursor.execute(
         "INSERT INTO resultados (fecha, resultado) VALUES (?, ?)", (fecha_actual, resultado))
     conn.commit()
 
 
 def verificar_resultados_recientes(minutos=5):
-    fecha_limite = datetime.datetime.now() - datetime.timedelta(minutes=minutos)
+    fecha_limite = datetime.now() - timedelta(minutes=minutos)
     cursor.execute(
         "SELECT resultado FROM resultados WHERE fecha >= ? ORDER BY fecha DESC LIMIT 1", (fecha_limite,))
     row = cursor.fetchone()
@@ -51,14 +51,27 @@ ok = "✅"
 error = "❌"
 
 
+def obtener_fecha():
+    try:
+        fecha_actual = datetime.now()
+        nueva_fecha = fecha_actual - timedelta(minutes=5)
+        nueva_fecha_iso = nueva_fecha.strftime("%Y-%m-%dT%H:%M:%S")
+
+        return nueva_fecha_iso
+    except ValueError:
+        return None
+
+
 def incrementar_numero(data):
     try:
         numero_actual = int(data["numero"])
         numero_actual += 1
         data["numero"] = numero_actual
+        data["fecha"] = obtener_fecha()
+
         return data
     except KeyError:
-        print("La clave 'numero' no existe en los datos JSON.")
+
         return None
 
 
@@ -106,11 +119,9 @@ def crear_documento_electronico(tipo):
         json_data.append(json_temp)
     else:
         json_data = json_temp
-    
 
     result, data = enviar_solicitud(url, json_data, headers)
     if data:
-        print(data.get('result', {}).get('deList', [{}])[0])
         return result, data.get('result', {}).get('deList', [{}])[0]
     else:
         return result, None
@@ -121,9 +132,8 @@ def cancelar_documento_cdc(cdc):
     headers = {"Authorization": f"Bearer {TOKEN_FACTURASEND}",
                "Content-Type": "application/json"}
     url = f"{URL_BASE}/evento/cancelacion/"
-
-    result, _ = enviar_solicitud(url, json_data, headers)
-    return result
+    print(json_data)
+    return enviar_solicitud(url, json_data, headers)
 
 
 def get_evento_in():
@@ -173,8 +183,8 @@ def get_evento_de():
 
 
 async def handle_test_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    resultado = verificar_resultados_recientes(minutos=3)
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    resultado = verificar_resultados_recientes(minutos=0)
 
     if resultado:
         await update.message.reply_text(resultado)
@@ -204,23 +214,48 @@ async def handle_test_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(message)
 
         resultado_temp = consultar_ruc('80003400')
-        resultado_ruc = f'CONSULTA RUC: {resultado_temp[0]}'
+        resultado_ruc = f'**CONSULTA RUC:** {resultado_temp[0]}'
         resultado_arr.append(resultado_ruc)
         await update.message.reply_text(resultado_ruc)
 
         # Crear CDC Sincrónico y Cancelarlo
-        response, cdc = crear_documento_electronico("de")
+        response, data = crear_documento_electronico("de")
+        await update.message.reply_text("**CREAR DE SINCRONO (no disponible en prod)**")
+        resultado_arr.append(message)
+
         message = (
-            f'CREAR CDC SINCRONO: {response}\n'
-            f'CANCELAR CDC SINCRONO: {cancelar_documento_cdc(cdc)}\n'
-        )
-        response, cdc = crear_documento_electronico("lote")
-        message = (
-            f'CREAR CDC ASINCRONO: {response}\n'
-            f'CANCELAR CDC ASINCRONO: {cancelar_documento_cdc(cdc)}\n'
+            f'NÚMERO: {data.get("numero")}\n'
+            f'CDC: {data.get("cdc")}\n'
+            f'COD. RESPUESTA: {data.get("respuesta_codigo")}\n'
+            f'ESTADO: {data.get("estado")}'
         )
         resultado_arr.append(message)
         await update.message.reply_text(message)
+
+        response, data = cancelar_documento_cdc(data.get("cdc"))
+        message = (
+            f'**CANCELAR CDC SINCRONO:** {response}\n'
+        )
+        await update.message.reply_text(message)
+        resultado_arr.append(message)
+
+        await update.message.reply_text('**CREAR CDC ASINCRONO:**')
+        resultado_arr.append(message)
+
+        response, data = crear_documento_electronico("lote")
+        message = (
+            f'NÚMERO: {data.get("numero")}\n'
+            f'CDC: {data.get("cdc")}\n'
+        )
+        resultado_arr.append(message)
+        await update.message.reply_text(message)
+        
+        response, data = cancelar_documento_cdc(data.get("cdc"))
+        message = (
+            f'**CANCELAR CDC ASINCRONO:** {response}\n'
+        )
+        await update.message.reply_text(message)
+        resultado_arr.append(message)
 
         message = 'EVENTOS: Espere mientras se procesan...⌚'
         resultado_arr.append(message)
@@ -228,7 +263,7 @@ async def handle_test_command(update: Update, context: ContextTypes.DEFAULT_TYPE
 
         eventos_arr = [get_evento_in(), get_evento_co(),
                        get_evento_di(), get_evento_de()]
-        
+
         print(eventos_arr)
 
         message = f'INUTILIZACION: {eventos_arr[0][0]} \n{json.dumps(eventos_arr[0][1], indent=1)}'
@@ -251,17 +286,19 @@ async def handle_test_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         registrar_resultado(concatenated_message)
         await update.message.reply_text("Luego tendré más funcionalidades, estoy chiquito...")
 
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     text = update.message.text
 
     welcome_message = (
-            'Soy un Bot del Sifen Paraguay 🇵🇾 😃, listo para ayudarte!\n'
-            'Comandos: \n'
-            'Para ambiente de test: /test\n'
-            'Para Consulta Ruc: /ruc XXXXXXX'
-        )
-                
+        'Soy un Bot del Sifen Paraguay 🇵🇾 😃, listo para ayudarte!\n'
+        'Comandos: \n'
+        'Para ambiente de test: /test\n'
+        'Para Consulta Ruc: /ruc XXXXXXX'
+    )
+
     await update.message.reply_text(welcome_message)
+
 
 async def handle_ruc_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     text = update.message.text
@@ -276,12 +313,14 @@ async def handle_ruc_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
             resultado_text = "Error de Servicio"
         else:
             if resultado_temp[1]['result']['respuesta_codigo'] != "0500":
-                resultado_text = "Razón Social: "+resultado_temp[1]['result']['razon_social']+\
-                "\nEstado: "+resultado_temp[1]['result']['estado_mensaje']+\
-                "\nFacturador Electronico: "+("SI" if resultado_temp[1]['result']['facturador_electronico'] else "No")
+                resultado_text = "Razón Social: "+resultado_temp[1]['result']['razon_social'] +\
+                    "\nEstado: "+resultado_temp[1]['result']['estado_mensaje'] +\
+                    "\nFacturador Electronico: " + \
+                    ("SI" if resultado_temp[1]['result']
+                     ['facturador_electronico'] else "No")
             else:
                 resultado_text = "Ruc no encontrado en el Sifen"
-                
+
         await update.message.reply_text(resultado_text)
     else:
         await update.message.reply_text("El formato válido es /ruc seguido de un número.\nEjemplo: /ruc 12345678")
