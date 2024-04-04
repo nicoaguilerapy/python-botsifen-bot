@@ -1,6 +1,6 @@
 {
     "cambio": 0,
-    "numero": 100468,
+    "numero": 100563,
     "establecimiento": 1,
     "punto": "001",
     "condicion": {
@@ -16,7 +16,7 @@
     },
     "tipoImpuesto": 1,
     "tipoDocumento": 1,
-    "fecha": "2023-09-13T13:34:34",
+    "fecha": "2024-03-08T17:34:03",
     "cliente": {
         "nombreFantasia": " JOSE MIGUEL           ",
         "distrito": 0,

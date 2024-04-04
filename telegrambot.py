@@ -78,6 +78,7 @@ def incrementar_numero(data):
 def enviar_solicitud(url, json_data, headers):
     try:
         response = requests.post(url, json=json_data, headers=headers)
+        print(response)
         if response.status_code == 200:
             data = response.json()
             if data.get('success') and data.get('success') == True:
@@ -224,38 +225,40 @@ async def handle_test_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         resultado_arr.append(message)
 
         message = (
-            f'NÚMERO: {data.get("numero")}\n'
-            f'CDC: {data.get("cdc")}\n'
-            f'COD. RESPUESTA: {data.get("respuesta_codigo")}\n'
-            f'ESTADO: {data.get("estado")}'
+            f'NÚMERO: {data.get("numero") if data else "000-000-000" }\n'
+            f'CDC: {data.get("cdc") if data else ""}\n'
+            f'COD. RESPUESTA: {data.get("respuesta_codigo") if data else "999"}\n'
+            f'ESTADO: {data.get("estado") if data else "Sin respuesta del Sifen"}'
         )
         resultado_arr.append(message)
         await update.message.reply_text(message)
 
-        response, data = cancelar_documento_cdc(data.get("cdc"))
-        message = (
-            f'**CANCELAR CDC SINCRONO:** {response}\n'
-        )
-        await update.message.reply_text(message)
-        resultado_arr.append(message)
+        if data:
+            response, data = cancelar_documento_cdc(data.get("cdc"))
+            message = (
+                f'**CANCELAR CDC SINCRONO:** {response}\n'
+            )
+            await update.message.reply_text(message)
+            resultado_arr.append(message)
 
         await update.message.reply_text('**CREAR CDC ASINCRONO:**')
         resultado_arr.append(message)
 
         response, data = crear_documento_electronico("lote")
         message = (
-            f'NÚMERO: {data.get("numero")}\n'
-            f'CDC: {data.get("cdc")}\n'
+            f'NÚMERO: {data.get("numero") if data else "000-000-000" }\n'
+            f'CDC: {data.get("cdc") if data else "" }\n'
         )
         resultado_arr.append(message)
         await update.message.reply_text(message)
         
-        response, data = cancelar_documento_cdc(data.get("cdc"))
-        message = (
-            f'**CANCELAR CDC ASINCRONO:** {response}\n'
-        )
-        await update.message.reply_text(message)
-        resultado_arr.append(message)
+        if data:
+            response, data = cancelar_documento_cdc(data.get("cdc"))
+            message = (
+                f'**CANCELAR CDC ASINCRONO:** {response}\n'
+            )
+            await update.message.reply_text(message)
+            resultado_arr.append(message)
 
         message = 'EVENTOS: Espere mientras se procesan...⌚'
         resultado_arr.append(message)
